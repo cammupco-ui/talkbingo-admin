@@ -1,65 +1,107 @@
-import Image from "next/image";
+import { getDashboardStats, getRecentQuestions } from "@/app/actions";
+import Link from "next/link";
+import { FileText, Scale, Zap, Plus, ArrowRight } from "lucide-react";
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+  const recentQuestions = await getRecentQuestions(5);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <Link href="/questions/new" className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+          <Plus className="h-4 w-4" />
+          New Question
+        </Link>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Questions"
+          value={stats.total}
+          icon={FileText}
+          color="text-gray-600"
+          trend={`+${stats.newThisWeek} this week`}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <StatCard
+          title="Balance Game"
+          value={stats.balance}
+          icon={Scale}
+          color="text-blue-600"
+        />
+        <StatCard
+          title="Truth Game"
+          value={stats.truth}
+          icon={Zap}
+          color="text-green-600"
+        />
+        <StatCard
+          title="Mini Games"
+          value={stats.miniGame}
+          icon={Zap}
+          color="text-purple-600"
+        />
+      </div>
+
+      {/* Recent Activity */}
+      <div className="rounded-xl border bg-white shadow-sm">
+        <div className="flex items-center justify-between p-6 pb-2">
+          <h2 className="text-lg font-semibold">Recent Activity</h2>
+          <Link href="/questions" className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+            View All <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="p-6">
+          <div className="space-y-4">
+            {recentQuestions.map((q) => (
+              <div key={q.q_id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full 
+                                        ${q.type === 'T' ? 'bg-green-100 text-green-700' :
+                      q.type === 'B' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                    <span className="font-bold text-sm">{q.type}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">{q.content.substring(0, 50)}{q.content.length > 50 && "..."}</p>
+                    <p className="text-sm text-gray-500">ID: {q.q_id} • {(q as any).code_names?.length || 0} Targets</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500 hidden sm:block">
+                    {/* Simple relative time logic or raw date for now */}
+                    {new Date(q.created_at || new Date()).toLocaleDateString()}
+                  </span>
+                  <Link
+                    href={`/questions/${q.q_id}`}
+                    className="rounded-md border px-3 py-1 text-sm font-medium hover:bg-gray-50"
+                  >
+                    Edit
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color, trend }: any) {
+  return (
+    <div className="rounded-xl border bg-white p-6 shadow-sm">
+      <div className="flex items-center justify-between space-y-0 pb-2">
+        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+        <Icon className={`h-4 w-4 ${color}`} />
+      </div>
+      <div className="flex items-end justify-between">
+        <div className="text-2xl font-bold">{value}</div>
+        {trend && <div className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{trend}</div>}
+      </div>
     </div>
   );
 }
