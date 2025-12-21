@@ -109,12 +109,8 @@ export async function getQuestions(filter: QuestionFilter = {}): Promise<{ quest
             break;
     }
 
-    const countQuery = await query;
-    const total = countQuery.count || 0;
-
-    query = query.range(skip, skip + limit - 1);
-
-    const { data, error } = await query;
+    // Single point of execution
+    const { data, error, count } = await query.range(skip, skip + limit - 1);
 
     if (error) {
         console.error("Failed to fetch questions:", error);
@@ -122,8 +118,8 @@ export async function getQuestions(filter: QuestionFilter = {}): Promise<{ quest
     }
 
     return {
-        questions: data.map(mapRowToQuestion),
-        total: total
+        questions: (data || []).map(mapRowToQuestion),
+        total: count || 0
     };
 }
 

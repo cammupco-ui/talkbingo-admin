@@ -127,8 +127,8 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
                                                 setSelectedIds([]);
                                             }}
                                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${viewHidden
-                                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                                                    : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                                : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
                                                 }`}
                                         >
                                             {viewHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
