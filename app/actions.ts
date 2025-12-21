@@ -103,6 +103,12 @@ export async function getQuestions(filter: QuestionFilter = {}): Promise<{ quest
         case 'q_id_asc':
             query = query.order('q_id', { ascending: true });
             break;
+        case 'status_asc': // Draft (false) first
+            query = query.order('is_published', { ascending: true });
+            break;
+        case 'status_desc': // Published (true) first
+            query = query.order('is_published', { ascending: false });
+            break;
         case 'q_id_desc':
         default:
             query = query.order('q_id', { ascending: false });

@@ -46,7 +46,7 @@ export interface QuestionFilter {
     search?: string;
     limit?: number;
     skip?: number;
-    sort?: 'created_desc' | 'created_asc' | 'updated_desc' | 'updated_asc' | 'q_id_desc' | 'q_id_asc';
+    sort?: 'created_desc' | 'created_asc' | 'updated_desc' | 'updated_asc' | 'q_id_desc' | 'q_id_asc' | 'status_asc' | 'status_desc';
     codeFilters?: {
         gender?: string;
         relation?: string;

@@ -124,6 +124,8 @@ export default function QuestionFilterToolbar({ hideTypeSelector }: QuestionFilt
                             <option value="created_asc">Create Date (Oldest)</option>
                             <option value="updated_desc">Update Date (Newest)</option>
                             <option value="updated_asc">Update Date (Oldest)</option>
+                            <option value="status_desc">Status (Published First)</option>
+                            <option value="status_asc">Status (Draft First)</option>
                             <option value="q_id_desc">ID (High to Low)</option>
                             <option value="q_id_asc">ID (Low to High)</option>
                         </select>
