@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Question } from '@/app/types';
 import Link from 'next/link';
 import { Eye, EyeOff, CheckSquare, Square, RefreshCcw, Loader2 } from 'lucide-react';
@@ -18,10 +19,13 @@ export default function QuestionListTable({ questions, searchParams }: QuestionL
     const [viewHidden, setViewHidden] = useState(false);
     const [togglingId, setTogglingId] = useState<string | null>(null);
 
+    const router = useRouter(); // Need to import useRouter at top
+
     async function handleToggleStatus(q_id: string, currentStatus: boolean) {
         setTogglingId(q_id);
         try {
             await toggleQuestionStatus(q_id, currentStatus);
+            router.refresh(); // Force refresh to show updated data
         } catch (error) {
             console.error("Failed to toggle status", error);
             alert("상태 변경에 실패했습니다.");
