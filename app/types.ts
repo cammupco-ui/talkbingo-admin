@@ -8,6 +8,7 @@ export interface BaseQuestion {
     created_at?: string;
     code_names?: string[]; // ["F-F-B-Ar-L1"]
     updated_at?: string;
+    is_published?: boolean;
 
     // UI Properties
     ui_theme?: string;

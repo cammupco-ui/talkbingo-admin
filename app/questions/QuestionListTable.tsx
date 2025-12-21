@@ -111,6 +111,7 @@ export default function QuestionListTable({ questions, searchParams }: QuestionL
                             <th className="w-10 px-6 py-3"></th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content / Details</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates (Upload/Create/Edit)</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relationships</th>
@@ -137,6 +138,12 @@ export default function QuestionListTable({ questions, searchParams }: QuestionL
                                             q.type === 'B' ? 'bg-blue-100 text-blue-800' :
                                                 'bg-purple-100 text-purple-800'}`}>
                                         {q.type}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-top">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${q.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {q.is_published ? 'Published' : 'Draft'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500 align-top">

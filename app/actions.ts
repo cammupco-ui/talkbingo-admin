@@ -140,7 +140,7 @@ export async function getQuestionById(q_id: string): Promise<Question | null> {
 }
 
 export async function saveQuestion(data: Question): Promise<void> {
-    const { q_id, type, code_names, content, ...props } = data;
+    const { q_id, type, code_names, content, is_published, ...props } = data;
 
     // Extract type-specific details
     let details = {};
@@ -164,6 +164,7 @@ export async function saveQuestion(data: Question): Promise<void> {
         content,
         code_names: cleanedCodeNames,
         details,
+        is_published: !!is_published,
         updated_at: new Date().toISOString()
     };
 
@@ -189,6 +190,7 @@ function mapRowToQuestion(row: any): Question {
         code_names: row.code_names || [],
         created_at: row.created_at,
         updated_at: row.updated_at,
+        is_published: !!row.is_published,
     };
 
     const details = row.details || {};

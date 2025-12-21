@@ -27,6 +27,7 @@ export default function QuestionForm({ initialQuestion, isNew }: QuestionFormPro
     const [answers, setAnswers] = useState((initialQuestion as any)?.answers || '');
     const [keyword, setKeyword] = useState((initialQuestion as any)?.keyword?.join(', ') || '');
     const [gameCode, setGameCode] = useState((initialQuestion as any)?.game_code || '');
+    const [isPublished, setIsPublished] = useState(initialQuestion?.is_published || false);
 
     // Manage CodeName text state to allow appending
     const [codeNamesText, setCodeNamesText] = useState((initialQuestion?.code_names || []).join('\n'));
@@ -75,6 +76,7 @@ export default function QuestionForm({ initialQuestion, isNew }: QuestionFormPro
             keyword: keyword.split(',').map((s: string) => s.trim()).filter(Boolean),
             game_code: gameCode,
             config: (formData.get('config') as string) || '',
+            is_published: isPublished,
         } as any);
 
         const params = new URLSearchParams(searchParams.toString());
@@ -131,6 +133,26 @@ export default function QuestionForm({ initialQuestion, isNew }: QuestionFormPro
                             <option value="M">MiniGame</option>
                         </select>
                     </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-md border border-gray-100 transition-all">
+                    <button
+                        type="button"
+                        onClick={() => setIsPublished(!isPublished)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isPublished ? 'bg-green-600' : 'bg-gray-200'
+                            }`}
+                    >
+                        <span
+                            className={`${isPublished ? 'translate-x-6' : 'translate-x-1'
+                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                        />
+                    </button>
+                    <span className="text-sm font-semibold text-gray-700">
+                        {isPublished ? 'Published (Live on App)' : 'Draft (Admin Only)'}
+                    </span>
+                    {isPublished && (
+                        <span className="ml-auto text-[10px] font-bold text-green-600 animate-pulse">LIVE</span>
+                    )}
                 </div>
 
                 <div>
