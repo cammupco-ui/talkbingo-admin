@@ -188,6 +188,7 @@ function mapRowToQuestion(row: any): Question {
         content: row.content,
         code_names: row.code_names || [],
         created_at: row.created_at,
+        updated_at: row.updated_at,
     };
 
     const details = row.details || {};
@@ -215,7 +216,6 @@ function mapRowToQuestion(row: any): Question {
     return base as Question; // Fallback
 }
 
-
 export interface DashboardStats {
     total: number;
     balance: number;
@@ -241,6 +241,80 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         miniGame: miniRes.count || 0,
         newThisWeek: recentRes.count || 0,
     };
+}
+
+export interface DetailedRelationStat {
+    subValue: string;
+    label: string;
+    relationLabel: string;
+    levelCounts: Record<string, number>; // L1: count, L2: count, ...
+    total: number;
+}
+
+export async function getDetailedStats(): Promise<DetailedRelationStat[]> {
+    // Fetch all questions with their code_names
+    const { data, error } = await supabase
+        .from('questions')
+        .select('code_names');
+
+    if (error) {
+        console.error("Failed to fetch detailed stats:", error);
+        return [];
+    }
+
+    const statsMap: Record<string, DetailedRelationStat> = {};
+
+    // Initialize map with all possible sub-relations
+    Object.entries(RELATION_MAP).forEach(([relKey, relDef]) => {
+        relDef.subs.forEach(sub => {
+            statsMap[sub.value] = {
+                subValue: sub.value,
+                label: sub.label,
+                relationLabel: relDef.label,
+                levelCounts: {
+                    'L1': 0,
+                    'L2': 0,
+                    'L3': 0,
+                    'L4': 0,
+                    'L5': 0
+                },
+                total: 0
+            };
+        });
+    });
+
+    // Aggregate
+    (data || []).forEach(row => {
+        const codes = row.code_names || [];
+        // A question can belong to multiple codes. 
+        // We count it once per (sub-relation, level) pair it belongs to.
+        // Actually, if a question has both M-M-B-Ar-L1 and F-F-B-Ar-L1, it's the same (Ar, L1).
+        // Let's unique the pairs for this question.
+        const seenPairs = new Set<string>();
+
+        codes.forEach((code: string) => {
+            const parts = code.split('-');
+            if (parts.length >= 4) {
+                // Format: G-G-Rel-Sub-Level
+                // Wait, some codes might be G-G-Rel-Sub-Level (5 parts)
+                // Example: M-M-B-Ar-L1 (5 parts)
+                const rel = parts[2];
+                const sub = parts[parts.length - 2];
+                const level = parts[parts.length - 1];
+
+                const pairKey = `${sub}-${level}`;
+                if (!seenPairs.has(pairKey)) {
+                    if (statsMap[sub]) {
+                        statsMap[sub].levelCounts[level] = (statsMap[sub].levelCounts[level] || 0) + 1;
+                        statsMap[sub].total++;
+                        seenPairs.add(pairKey);
+                    }
+                }
+            }
+        });
+    });
+
+    return Object.values(statsMap).filter(s => s.total > 0 || true); // Maybe keep 0s for chart consistency
 }
 
 export async function getRecentQuestions(limit: number = 5): Promise<Question[]> {

@@ -1,12 +1,14 @@
-import { getDashboardStats, getRecentQuestions } from "@/app/actions";
+import { getDashboardStats, getRecentQuestions, getDetailedStats } from "@/app/actions";
 import Link from "next/link";
 import { FileText, Scale, Zap, Plus, ArrowRight } from "lucide-react";
+import DashboardAnalytics from "./components/DashboardAnalytics";
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   const stats = await getDashboardStats();
   const recentQuestions = await getRecentQuestions(5);
+  const detailedStats = await getDetailedStats();
 
   return (
     <div className="space-y-8">
@@ -47,46 +49,48 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Recent Activity */}
-      <div className="rounded-xl border bg-white shadow-sm">
-        <div className="flex items-center justify-between p-6 pb-2">
-          <h2 className="text-lg font-semibold">Recent Activity</h2>
-          <Link href="/questions" className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
-            View All <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {recentQuestions.map((q) => (
-              <div key={q.q_id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                <div className="flex items-center gap-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full 
-                                        ${q.type === 'T' ? 'bg-green-100 text-green-700' :
-                      q.type === 'B' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                    <span className="font-bold text-sm">{q.type}</span>
+      {/* Analytics & Activity Section */}
+      <DashboardAnalytics initialStats={detailedStats}>
+        {/* Recent Activity */}
+        <div className="rounded-xl border bg-white shadow-sm">
+          <div className="flex items-center justify-between p-6 pb-2">
+            <h2 className="text-lg font-semibold">Recent Activity</h2>
+            <Link href="/questions" className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              {recentQuestions.map((q) => (
+                <div key={q.q_id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full 
+                                          ${q.type === 'T' ? 'bg-green-100 text-green-700' :
+                        q.type === 'B' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                      <span className="font-bold text-sm">{q.type}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{q.content.substring(0, 50)}{q.content.length > 50 && "..."}</p>
+                      <p className="text-sm text-gray-500">ID: {q.q_id} • {(q as any).code_names?.length || 0} Targets</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{q.content.substring(0, 50)}{q.content.length > 50 && "..."}</p>
-                    <p className="text-sm text-gray-500">ID: {q.q_id} • {(q as any).code_names?.length || 0} Targets</p>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-500 hidden sm:block">
+                      {new Date(q.created_at || new Date()).toLocaleDateString()}
+                    </span>
+                    <Link
+                      href={`/questions/${q.q_id}`}
+                      className="rounded-md border px-3 py-1 text-sm font-medium hover:bg-gray-50"
+                    >
+                      Edit
+                    </Link>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500 hidden sm:block">
-                    {/* Simple relative time logic or raw date for now */}
-                    {new Date(q.created_at || new Date()).toLocaleDateString()}
-                  </span>
-                  <Link
-                    href={`/questions/${q.q_id}`}
-                    className="rounded-md border px-3 py-1 text-sm font-medium hover:bg-gray-50"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </DashboardAnalytics>
     </div>
   );
 }
