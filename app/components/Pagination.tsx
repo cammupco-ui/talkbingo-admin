@@ -45,29 +45,32 @@ export default function Pagination({ total, limit, currentPage }: PaginationProp
                         </button>
 
                         {/* Always show page numbers */}
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let p = i + 1;
+                        {(() => {
+                            let startPage = 1;
                             if (totalPages > 5) {
-                                if (currentPage > 3) p = currentPage - 2 + i;
-                                if (p > totalPages) p = i + (totalPages - 4); // Clamp at end
+                                if (currentPage <= 3) {
+                                    startPage = 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    startPage = totalPages - 4;
+                                } else {
+                                    startPage = currentPage - 2;
+                                }
                             }
-                            // Guard against invalid p (though math should be safe for >0)
-                            if (p < 1) p = 1;
 
-                            return p;
-                        }).map(p => (
-                            <button
-                                key={p}
-                                onClick={() => handlePageChange(p)}
-                                aria-current={currentPage === p ? 'page' : undefined}
-                                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === p
+                            return Array.from({ length: Math.min(5, totalPages) }, (_, i) => startPage + i).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => handlePageChange(p)}
+                                    aria-current={currentPage === p ? 'page' : undefined}
+                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === p
                                         ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
                                         : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-                                    }`}
-                            >
-                                {p}
-                            </button>
-                        ))}
+                                        }`}
+                                >
+                                    {p}
+                                </button>
+                            ));
+                        })()}
 
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
