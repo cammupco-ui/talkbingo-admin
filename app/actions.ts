@@ -403,8 +403,6 @@ export async function checkSpelling(text: string): Promise<{ token: string, sugg
         let results: { token: string, suggestions: string[], info: string }[] = [];
 
         const onResult = (data: any) => {
-            // data structure from hanspell usually contains multiple error objects
-            // We'll normalize it
             if (Array.isArray(data)) {
                 const mapped = data.map(item => ({
                     token: item.token,
@@ -416,16 +414,27 @@ export async function checkSpelling(text: string): Promise<{ token: string, sugg
             }
         };
 
-        const onEnd = () => {
-            resolve(results);
+        const tryPNU = () => {
+            console.log("DAUM failed, trying PNU fallback...");
+            results = []; // Clear any partial results
+            hanspell.spellCheckByPNU(text, 6000,
+                onResult,
+                () => resolve(results),
+                (err: any) => {
+                    console.error("PNU Spell check error:", err);
+                    resolve([]); // Both failed
+                }
+            );
         };
 
-        const onError = (err: any) => {
-            console.error("Spell check error:", err);
-            resolve([]); // Return empty on error to handle gracefully
-        };
-
-        // using DAUM speller as PNU is unreliable
-        hanspell.spellCheckByDAUM(text, 6000, onResult, onEnd, onError);
+        // Try DAUM first
+        hanspell.spellCheckByDAUM(text, 6000,
+            onResult,
+            () => resolve(results),
+            (err: any) => {
+                console.error("DAUM Spell check error:", err);
+                tryPNU(); // Fallback to PNU
+            }
+        );
     });
 }
