@@ -180,6 +180,23 @@ export async function saveQuestion(data: Question): Promise<void> {
     revalidatePath('/questions');
 }
 
+export async function toggleQuestionStatus(q_id: string, currentStatus: boolean): Promise<void> {
+    const { error } = await supabase
+        .from('questions')
+        .update({
+            is_published: !currentStatus,
+            updated_at: new Date().toISOString()
+        })
+        .eq('q_id', q_id);
+
+    if (error) {
+        console.error("Failed to toggle question status:", error);
+        throw new Error("Failed to toggle question status");
+    }
+
+    revalidatePath('/questions');
+}
+
 // Helper: Map Supabase Row to Question Type
 function mapRowToQuestion(row: any): Question {
     const base = {

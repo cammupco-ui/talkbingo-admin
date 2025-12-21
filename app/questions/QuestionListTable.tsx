@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Question } from '@/app/types';
 import Link from 'next/link';
-import { Eye, EyeOff, CheckSquare, Square, RefreshCcw } from 'lucide-react';
+import { Eye, EyeOff, CheckSquare, Square, RefreshCcw, Loader2 } from 'lucide-react';
+import { toggleQuestionStatus } from '@/app/actions';
 
 interface QuestionListTableProps {
     questions: Question[];
@@ -15,6 +16,19 @@ export default function QuestionListTable({ questions, searchParams }: QuestionL
     const [hiddenIds, setHiddenIds] = useState<string[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [viewHidden, setViewHidden] = useState(false);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
+
+    async function handleToggleStatus(q_id: string, currentStatus: boolean) {
+        setTogglingId(q_id);
+        try {
+            await toggleQuestionStatus(q_id, currentStatus);
+        } catch (error) {
+            console.error("Failed to toggle status", error);
+            alert("상태 변경에 실패했습니다.");
+        } finally {
+            setTogglingId(null);
+        }
+    }
 
     // Load hidden IDs from localStorage
     useEffect(() => {
@@ -141,10 +155,21 @@ export default function QuestionListTable({ questions, searchParams }: QuestionL
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-top">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${q.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    <button
+                                        onClick={() => handleToggleStatus(q.q_id, !!q.is_published)}
+                                        disabled={togglingId === q.q_id}
+                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full transition-all hover:ring-2 hover:ring-offset-1 
+                                            ${q.is_published
+                                                ? 'bg-green-100 text-green-800 hover:ring-green-200'
+                                                : 'bg-gray-100 text-gray-800 hover:ring-gray-200'} 
+                                            ${togglingId === q.q_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                        title={q.is_published ? 'Click to set as Draft' : 'Click to publish'}
+                                    >
+                                        {togglingId === q.q_id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin mr-1 self-center" />
+                                        ) : null}
                                         {q.is_published ? 'Published' : 'Draft'}
-                                    </span>
+                                    </button>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500 align-top">
                                     <div className="font-medium text-gray-900 mb-1">{q.content}</div>
