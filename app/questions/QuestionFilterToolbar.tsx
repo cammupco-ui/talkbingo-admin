@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { GENDER_PAIRS, RELATION_MAP, INTIMACY_LEVELS } from '@/app/constants';
 import { ChevronDown, ChevronUp, Filter, X } from 'lucide-react';
 
@@ -26,6 +26,21 @@ export default function QuestionFilterToolbar({ hideTypeSelector }: QuestionFilt
     const [sub, setSub] = useState(searchParams.get('sub') || '');
     const [level, setLevel] = useState(searchParams.get('level') || '');
 
+    // Sync state with URL params on navigation
+    useEffect(() => {
+        setSearch(searchParams.get('q') || '');
+        const paramType = searchParams.get('type') || '';
+        // Only update type if it's not empty, or if we are not in hidden mode
+        // Actually we should always sync it to ensure consistency
+        setType(paramType);
+
+        setSort(searchParams.get('sort') || 'created_desc');
+        setGender(searchParams.get('gender') || '');
+        setRelation(searchParams.get('relation') || '');
+        setSub(searchParams.get('sub') || '');
+        setLevel(searchParams.get('level') || '');
+    }, [searchParams]);
+
     const createQueryString = useCallback((name: string, value: string) => {
         const params = new URLSearchParams(searchParams.toString());
         if (value) {
@@ -36,24 +51,34 @@ export default function QuestionFilterToolbar({ hideTypeSelector }: QuestionFilt
         return params.toString();
     }, [searchParams]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const applyFilters = (overrides: Partial<{ q: string, type: string, sort: string, gender: string, relation: string, sub: string, level: string }> = {}) => {
         const params = new URLSearchParams(searchParams.toString());
-        if (search) params.set('q', search); else params.delete('q');
-        if (type) params.set('type', type); else params.delete('type');
-        if (sort) params.set('sort', sort); else params.delete('sort');
 
-        // Advanced
+        // Use overrides or fallback to current state
+        const nextSearch = overrides.q !== undefined ? overrides.q : search;
+        const nextType = overrides.type !== undefined ? overrides.type : type;
+        const nextSort = overrides.sort !== undefined ? overrides.sort : sort;
+
+        // For type, if hidden, prefer the URL param if state is empty (safety net)
+        const effectiveType = hideTypeSelector ? (searchParams.get('type') || nextType) : nextType;
+
+        if (nextSearch) params.set('q', nextSearch); else params.delete('q');
+        if (effectiveType) params.set('type', effectiveType); else params.delete('type');
+        if (nextSort) params.set('sort', nextSort); else params.delete('sort');
+
+        // Advanced (use state as overrides are mainly for top-bar)
         if (gender) params.set('gender', gender); else params.delete('gender');
         if (relation) params.set('relation', relation); else params.delete('relation');
         if (sub) params.set('sub', sub); else params.delete('sub');
         if (level) params.set('level', level); else params.delete('level');
 
-        // Reset page on filter change
         params.delete('page');
-
         router.push(pathname + '?' + params.toString());
+    };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        applyFilters();
     };
 
     const clearFilters = () => {
@@ -67,10 +92,11 @@ export default function QuestionFilterToolbar({ hideTypeSelector }: QuestionFilt
         setSub('');
         setLevel('');
 
-        // If we are in a panel (hideTypeSelector is true), we must persist the type in the URL
         if (hideTypeSelector && type) {
             const params = new URLSearchParams();
             params.set('type', type);
+            // Also reset sort to default
+            params.set('sort', 'created_desc');
             router.push(pathname + '?' + params.toString());
         } else {
             router.push(pathname);
@@ -117,7 +143,11 @@ export default function QuestionFilterToolbar({ hideTypeSelector }: QuestionFilt
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Sort By</label>
                         <select
                             value={sort}
-                            onChange={(e) => setSort(e.target.value)}
+                            onChange={(e) => {
+                                const newSort = e.target.value;
+                                setSort(newSort);
+                                applyFilters({ sort: newSort });
+                            }}
                             className="w-full border rounded-md px-3 py-2 text-sm"
                         >
                             <option value="created_desc">Create Date (Newest)</option>
