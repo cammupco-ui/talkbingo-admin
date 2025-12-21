@@ -32,9 +32,12 @@ export default function StatsChart({ data, onBarClick }: StatsChartProps) {
                     barGap={2}
                     barCategoryGap="15%"
                     onClick={(state: any) => {
+                        // Reliable click handler for the entire chart area
                         if (state && state.activePayload && state.activePayload.length > 0) {
-                            const { subValue } = state.activePayload[0].payload;
-                            onBarClick(subValue);
+                            const payload = state.activePayload[0].payload;
+                            if (payload && payload.subValue) {
+                                onBarClick(payload.subValue);
+                            }
                         }
                     }}
                 >

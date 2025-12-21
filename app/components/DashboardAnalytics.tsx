@@ -5,7 +5,8 @@ import StatsChart from './StatsChart';
 import { DetailedRelationStat, getQuestions } from '@/app/actions';
 import { Question } from '@/app/types';
 import Link from 'next/link';
-import { X, Eye, EyeOff, Trash2, CheckSquare, Square, RefreshCcw } from 'lucide-react';
+import { X, Eye, EyeOff, CheckSquare, Square, RefreshCcw, Filter, ChevronDown } from 'lucide-react';
+import { RELATION_MAP, INTIMACY_LEVELS } from '@/app/constants';
 
 interface DashboardAnalyticsProps {
     initialStats: DetailedRelationStat[];
@@ -22,6 +23,12 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
     const [hiddenIds, setHiddenIds] = useState<string[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [viewHidden, setViewHidden] = useState(false);
+
+    // Flatten relations for dropdown
+    const allRelations = Object.values(RELATION_MAP).flatMap(r => r.subs.map(s => ({
+        ...s,
+        groupLabel: r.label
+    })));
 
     // Load hidden IDs from localStorage
     useEffect(() => {
@@ -97,15 +104,73 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
 
     return (
         <div className="space-y-8">
+            {/* Filter Controls */}
+            <div className="bg-white px-6 py-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center gap-4 justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm">
+                        <Filter className="w-4 h-4 text-blue-600" />
+                        필터
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <select
+                                value={selectedSub || ''}
+                                onChange={(e) => {
+                                    setSelectedSub(e.target.value || null);
+                                    setSelectedIds([]);
+                                }}
+                                className="bg-gray-50 border border-gray-200 hover:border-blue-400 text-gray-700 text-sm py-2 pl-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500 transition-colors w-48"
+                            >
+                                <option value="">관계 선택 (전체)</option>
+                                {Object.entries(RELATION_MAP).map(([key, group]) => (
+                                    <optgroup key={key} label={group.label}>
+                                        {group.subs.map(sub => (
+                                            <option key={sub.value} value={sub.value}>{sub.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="relative">
+                            <select
+                                value={selectedLevel || ''}
+                                onChange={(e) => {
+                                    setSelectedLevel(e.target.value || null);
+                                    setSelectedIds([]);
+                                }}
+                                className="bg-gray-50 border border-gray-200 hover:border-blue-400 text-gray-700 text-sm py-2 pl-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500 transition-colors w-40"
+                            >
+                                <option value="">레벨 선택 (전체)</option>
+                                {INTIMACY_LEVELS.map(level => (
+                                    <option key={level} value={level}>Level {level.replace('L', '')}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {(selectedSub || selectedLevel) && (
+                    <button
+                        onClick={() => {
+                            setSelectedSub(null);
+                            setSelectedLevel(null);
+                            setSelectedIds([]);
+                        }}
+                        className="text-sm text-gray-500 hover:text-red-600 font-medium px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                        <RefreshCcw className="w-3.5 h-3.5" /> 초기화
+                    </button>
+                )}
+            </div>
+
             <StatsChart data={initialStats} onBarClick={handleBarClick} />
 
-            {/* Children (Recent Activity) */}
-            {children}
-
-            {/* Results Frame (Inline) */}
+            {/* Results Frame (Inline) - Moved Up */}
             <div id="stats-results-frame" className="scroll-mt-6">
                 {selectedSub && (
-                    <div className="rounded-xl border bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="rounded-xl border bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mb-8">
                         <div className="p-6 pb-4 border-b border-gray-100 bg-gray-50/50">
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
@@ -134,64 +199,66 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
                                             {viewHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                                             {viewHidden ? 'Active Questions' : 'Go Hidden'}
                                         </button>
-                                        <button
-                                            onClick={() => setSelectedSub(null)}
-                                            className="text-sm font-medium text-gray-400 hover:text-gray-600 flex items-center gap-1"
-                                        >
-                                            닫기 <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    {/* Level Selector Tabs */}
-                                    <div className="flex flex-wrap gap-1 p-1 bg-gray-100/80 rounded-lg w-fit">
-                                        <button
-                                            onClick={() => setSelectedLevel(null)}
-                                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLevel === null
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-700'
-                                                }`}
-                                        >
-                                            전체
-                                        </button>
-                                        {['L1', 'L2', 'L3', 'L4', 'L5'].map((level) => (
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                key={level}
-                                                onClick={() => setSelectedLevel(level)}
-                                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLevel === level
+                                                onClick={() => setSelectedSub(null)}
+                                                className="text-sm font-medium text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded-md transition-colors"
+                                            >
+                                                닫기 <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        {/* Level Selector Tabs */}
+                                        <div className="flex flex-wrap gap-1 p-1 bg-gray-100/80 rounded-lg w-fit">
+                                            <button
+                                                onClick={() => setSelectedLevel(null)}
+                                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLevel === null
                                                     ? 'bg-white text-blue-600 shadow-sm'
                                                     : 'text-gray-500 hover:text-gray-700'
                                                     }`}
                                             >
-                                                Level {level.replace('L', '')}
+                                                전체
                                             </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Batch Actions */}
-                                    {selectedIds.length > 0 && (
-                                        <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-                                            <span className="text-xs font-medium text-gray-500 mr-1">{selectedIds.length}개 선택됨</span>
-                                            {viewHidden ? (
+                                            {['L1', 'L2', 'L3', 'L4', 'L5'].map((level) => (
                                                 <button
-                                                    onClick={handleUnhideSelected}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-all shadow-sm shadow-green-100"
+                                                    key={level}
+                                                    onClick={() => setSelectedLevel(level)}
+                                                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLevel === level
+                                                        ? 'bg-white text-blue-600 shadow-sm'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
                                                 >
-                                                    <RefreshCcw className="w-3.5 h-3.5" />
-                                                    다시 리스트에서 보기
+                                                    Level {level.replace('L', '')}
                                                 </button>
-                                            ) : (
-                                                <button
-                                                    onClick={handleHideSelected}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 text-white rounded-lg text-sm font-bold hover:bg-gray-900 transition-all shadow-sm"
-                                                >
-                                                    <EyeOff className="w-3.5 h-3.5" />
-                                                    Hide Selected
-                                                </button>
-                                            )}
+                                            ))}
                                         </div>
-                                    )}
+
+                                        {/* Batch Actions */}
+                                        {selectedIds.length > 0 && (
+                                            <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+                                                <span className="text-xs font-medium text-gray-500 mr-1">{selectedIds.length}개 선택됨</span>
+                                                {viewHidden ? (
+                                                    <button
+                                                        onClick={handleUnhideSelected}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-all shadow-sm shadow-green-100"
+                                                    >
+                                                        <RefreshCcw className="w-3.5 h-3.5" />
+                                                        다시 리스트에서 보기
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleHideSelected}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 text-white rounded-lg text-sm font-bold hover:bg-gray-900 transition-all shadow-sm"
+                                                    >
+                                                        <EyeOff className="w-3.5 h-3.5" />
+                                                        Hide Selected
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +270,7 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
                                     <p className="text-sm text-gray-500">질문을 불러오는 중...</p>
                                 </div>
                             ) : displayedQuestions.length > 0 ? (
-                                <div className="space-y-4">
+                                <div>
                                     {displayedQuestions.map((q) => (
                                         <div key={q.q_id} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0 group">
                                             <div className="flex items-center gap-4 flex-1">
@@ -232,7 +299,7 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
                                             </div>
                                             <Link
                                                 href={`/questions/${q.q_id}`}
-                                                className="rounded-md border border-gray-200 px-3 py-1 text-sm font-medium hover:bg-gray-50 hover:border-blue-200 transition-all font-semibold shrink-0"
+                                                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold hover:bg-white hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all shrink-0 bg-gray-50 text-gray-600"
                                             >
                                                 Edit
                                             </Link>
@@ -248,14 +315,17 @@ export default function DashboardAnalytics({ initialStats, children }: Dashboard
                                     )}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                    <p>{viewHidden ? '숨겨진 질문이 없습니다.' : '해당 관계 및 레벨의 질문이 없습니다.'}</p>
+                                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                                    <p className="font-medium">{viewHidden ? '숨겨진 질문이 없습니다.' : '해당 관계 및 레벨의 질문이 없습니다.'}</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Children (Recent Activity) */}
+            {children}
         </div>
     );
 }
