@@ -394,47 +394,77 @@ export async function getNextQuestionId(type: 'B' | 'T' | 'M'): Promise<string> 
 }
 
 export async function checkSpelling(text: string): Promise<{ token: string, suggestions: string[], info: string, context?: string }[]> {
-    // Dynamic import/require to ignore type issues with hanspell if needed
     const hanspell = require('hanspell');
-
     if (!text.trim()) return [];
 
     return new Promise((resolve) => {
-        let results: { token: string, suggestions: string[], info: string }[] = [];
+        const TIMEOUT_MS = 4000;
+        let isResolved = false;
+        let results: { token: string, suggestions: string[], info: string, context?: string }[] = [];
+
+        const safeResolve = (val: any) => {
+            if (!isResolved) {
+                isResolved = true;
+                resolve(val);
+            }
+        };
+
+        // Timeout fallback
+        setTimeout(() => {
+            if (!isResolved) {
+                console.error("Spell Check Timed Out");
+                safeResolve([]);
+            }
+        }, TIMEOUT_MS * 2);
 
         const onResult = (data: any) => {
             if (Array.isArray(data)) {
+                // Normalize data
                 const mapped = data.map(item => ({
-                    token: item.token,
-                    suggestions: item.suggestions,
-                    info: item.info,
-                    context: item.context
+                    token: item.token || '',
+                    suggestions: item.suggestions || [],
+                    info: item.info || '',
+                    context: item.context || ''
                 }));
                 results = results.concat(mapped);
             }
         };
 
         const tryPNU = () => {
-            console.log("DAUM failed, trying PNU fallback...");
-            results = []; // Clear any partial results
-            hanspell.spellCheckByPNU(text, 6000,
-                onResult,
-                () => resolve(results),
-                (err: any) => {
-                    console.error("PNU Spell check error:", err);
-                    resolve([]); // Both failed
-                }
-            );
+            if (isResolved) return;
+            console.log("DAUM failed/empty, trying PNU fallback...");
+            results = []; // Reset partial results
+            try {
+                hanspell.spellCheckByPNU(text, 6000,
+                    onResult,
+                    () => safeResolve(results),
+                    (err: any) => {
+                        console.error("PNU Spell check error:", err);
+                        safeResolve([]); // Fail gracefully
+                    }
+                );
+            } catch (e) {
+                console.error("PNU Sync Error:", e);
+                safeResolve([]);
+            }
         };
 
         // Try DAUM first
-        hanspell.spellCheckByDAUM(text, 6000,
-            onResult,
-            () => resolve(results),
-            (err: any) => {
-                console.error("DAUM Spell check error:", err);
-                tryPNU(); // Fallback to PNU
-            }
-        );
+        try {
+            hanspell.spellCheckByDAUM(text, 6000,
+                onResult,
+                () => {
+                    // Success with DAUM
+                    safeResolve(results);
+                },
+                (err: any) => {
+                    console.error("DAUM Spell check error:", err);
+                    tryPNU();
+                }
+            );
+        } catch (e) {
+            console.error("DAUM Sync Error:", e);
+            tryPNU();
+        }
     });
 }
